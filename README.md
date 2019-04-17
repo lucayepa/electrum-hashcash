@@ -29,8 +29,10 @@ and sends to the server the same request that the client originally sent.
 
 Required libraries
 ------------------
+On Debian:
 ```
-apt-get install libjson-perl libdigest-sha-perl libstring-random-perl
+apt-get install libjson-perl libdigest-sha-perl libstring-random-perl \
+                libio-socket-ip-perl
 ```
 
 Install on server side
@@ -60,6 +62,12 @@ cd electrum-hashcash
 ```
 electrum -1 --server localhost:50001:t
 ```
+
+IPv6
+----
+The program listens on IPv6 by using the option `--listen_ipv6` on command
+line, and sends the connection to an IPv6 address by using the option
+`--target_ipv6` on command line.
 
 Readme sources and links
 ------------------------

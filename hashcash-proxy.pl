@@ -7,24 +7,34 @@ use Digest::SHA qw(sha256_hex);
 use Getopt::Long;
 use String::Random qw(random_regex);
 
+use Socket qw(PF_INET PF_INET6 IN6ADDR_ANY inet_ntop);
 use IO::Socket;
+use IO::Socket::IP -register;
 use IO::Select;
 
 my $json = JSON->new->canonical;
 
-my $usage = "Usage: $0 --listen_port=1080 --target_host=localhost --target_port=50001";
+my $usage = "Usage: $0 --listen_port=1080 --target_host=localhost --target_port=50001 [--listen_ipv6] [--target_ipv6]";
 my $listen_port=0;
 my $target_host="";
 my $target_port=0;
+my $listen_ipv6=0;
+my $target_ipv6=0;
 GetOptions (
             "listen_port=i" => \$listen_port,
             "target_port=i" => \$target_port,
             "target_host=s" => \$target_host,
+            "listen_ipv6" => \$listen_ipv6,
+            "target_ipv6" => \$target_ipv6,
            )
     or die $usage;
 
+#Mandatory options
 $listen_port and $target_port and ($target_host ne "")
     or die $usage;
+
+my $listen_domain = ($listen_ipv6)? PF_INET6 : PF_INET;
+my $target_domain = ($target_ipv6)? PF_INET6 : PF_INET;
 
 my $serverside = ($0 =~ /server/);
 
@@ -36,7 +46,8 @@ my $debug = 1;
 
 sub new_conn {
     my ($host, $port) = @_;
-    return IO::Socket::INET->new(
+    return IO::Socket::IP->new(
+        Domain   => $target_domain,
         PeerAddr => $host,
         PeerPort => $port
     ) || die "Unable to connect to $host:$port: $!";
@@ -44,7 +55,8 @@ sub new_conn {
 
 sub new_server {
     my ($host, $port) = @_;
-    my $server = IO::Socket::INET->new(
+    my $server = IO::Socket::IP->new(
+        Domain    => $listen_domain,
         LocalAddr => $host,
         LocalPort => $port,
         ReuseAddr => 1,
@@ -125,16 +137,22 @@ sub set_pow {
     return $json->encode($h);
 }
 
-print "Starting a server on 0.0.0.0:$listen_port\n";
-my $server = new_server('0.0.0.0', $listen_port);
+my $server;
+if ($listen_ipv6) {
+    print "Starting a server on :::$listen_port\n";
+    $server = new_server(inet_ntop(PF_INET6,IN6ADDR_ANY), $listen_port);
+} else {
+    print "Starting a server on 0.0.0.0:$listen_port\n";
+    $server = new_server('0.0.0.0', $listen_port);
+}
+
 $ioset->add($server);
 
 while (1) {
     for my $socket ($ioset->can_read) {
         if ($socket == $server) {
             new_connection($server);
-        }
-        else {
+        } else {
             next unless exists $socket_map{$socket};
             my $remote = $socket_map{$socket};
             my $buffer;
@@ -160,8 +178,7 @@ while (1) {
                     #answer from server to client => no pow
                     $remote->syswrite($buffer);
                 }
-            }
-            else {
+            } else {
                 close_connection($socket);
             }
         }
