@@ -44,7 +44,7 @@ TCP_PORT=40001 COIN=Bitcoin DB_DIRECTORY=path/to/db DAEMON_URL='http://user:pass
 ```
 git clone https://github.com/lucayepa/electrum-hashcash
 cd electrum-hashcash
-./tcp-proxy-server.pl --listen_port=30001 --target_host=127.0.0.1 --target_port=40001
+./hashcash-proxy-server.pl --listen_port=30001 --target_host=127.0.0.1 --target_port=40001
 ```
 
 Install on client side with only one server
@@ -54,7 +54,7 @@ Install on client side with only one server
 ```
 git clone https://github.com/lucayepa/electrum-hashcash
 cd electrum-hashcash
-./tcp-proxy-client.pl --listen_port=50001 --target_host=my.personal.server --target_port=30001
+./hashcash-proxy-client.pl --listen_port=50001 --target_host=my.personal.server --target_port=30001
 ```
 * Start Electrum, using only one server, localhost on port 50001:
 ```
